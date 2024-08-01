@@ -62,9 +62,11 @@ function drawChart(elemId, data) {
 }
 
 (async function() {
-    const response = await fetch("static/data.jsonl");
+    const headResp = await fetch("static/data.jsonl", {method: "HEAD"});
+    const contentLen = Number(headResp.headers.get("content-length"));
+    const response = await fetch("static/data.jsonl", {headers: {"Range": `bytes=${contentLen-250000}-${contentLen-1}`}});
     const jsonl = await response.text();
-    const rows = jsonl.split('\n').filter((row, i) => i%2 == 0 && row.length > 0);
+    const rows = jsonl.split('\n').slice(1).filter((row, i) => i%2 == 0 && row.length > 0);
     const data = rows.map(row => {
         const {time, temperature_F: temp, humidity} = JSON.parse(row);
         return {time: new Date(time), temp, humidity, dewpoint: dewpoint(humidity, temp)};
