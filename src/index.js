@@ -61,6 +61,16 @@ function drawChart(elemId, data) {
     );
 }
 
+const bar = xs => xs.reduce((acc, x) => acc + x) / xs.length;
+
+function leastSq(xs, ys) {
+    const x2bar = bar(xs.map(x => x*x));
+    const xbar = bar(xs);
+    const xybar = bar(xs.map((x,i) => x*ys[i]));
+    const ybar = bar(ys);
+    return (xybar - xbar*ybar)/(x2bar - xbar*xbar);
+}
+
 (async function() {
     const headResp = await fetch("static/data.jsonl", {method: "HEAD"});
     const contentLen = Number(headResp.headers.get("content-length"));
@@ -77,9 +87,10 @@ function drawChart(elemId, data) {
     drawChart('past-twentyfour-hours', past24hours);
 
     const current = data[data.length - 1];
-    const [t1, t2, t3, t4, t5] = data.slice(data.length - 5);
-    const h = (t5.time - t1.time)/1000/3600;
-    const dt = (t1.temp - 8*t2.temp + 8*t4.temp - t5.temp)/12/h;
+    const points = data.slice(data.length - 5);
+    const xs = points.map(p => (p.time - points[0].time)/1000/3600);
+    const ys = points.map(p => p.temp);
+    const dt = leastSq(xs, ys);
     document.getElementById("current").innerHTML = `
         <p>${current.time.toLocaleString()}</p>
         <p>${current.temp}°F ${dt.toFixed(1)}°F/hr</p>
